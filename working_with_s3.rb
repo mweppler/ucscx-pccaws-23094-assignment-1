@@ -14,6 +14,7 @@ require 'test/unit'
 include Test::Unit::Assertions
 
 aws_config = {}
+log_entries = []
 
 users_aws_config_path = File.expand_path '~/.aws'
 if Dir.exists? users_aws_config_path
@@ -47,16 +48,22 @@ Aws.config.update({
   ),
 })
 s3 = Aws::S3::Client.new
-puts "Created S3 Instance"
+msg = "[#{Time.now}] [INFO] Instantiated S3 Object"
+log_entries << msg
+puts msg
 
 # Create 2 buckets in S3
 bucket_1 = { acl: 'private', bucket: 'me.weppler.myawsbucket.1' }
 s3.create_bucket(bucket_1)
-puts "Created bucket: #{bucket_1[:bucket]}"
+msg = "[#{Time.now}] [INFO] Created bucket: #{bucket_1[:bucket]}"
+log_entries << msg
+puts msg
 
 bucket_2 = { acl: 'private', bucket: 'me.weppler.myawsbucket.2' }
 s3.create_bucket(bucket_2)
-puts "Created bucket: #{bucket_2[:bucket]}"
+msg = "[#{Time.now}] [INFO] Created bucket: #{bucket_2[:bucket]}"
+log_entries << msg
+puts msg
 
 # Get filenames and store them on objects in new buckets
 file_stream_1 = File.open(ARGV[0] || 'file_1.txt', 'r')
@@ -69,7 +76,9 @@ upload_file_1 = {
 }
 s3.put_object(upload_file_1)
 file_stream_1.close
-puts "Uploaded file: #{file_1[:key]} to bucket: #{bucket_1[:bucket]}"
+msg = "[#{Time.now}] [INFO] Uploaded file: #{file_1[:key]} to bucket: #{bucket_1[:bucket]}"
+log_entries << msg
+puts msg
 
 file_stream_2 = File.open(ARGV[1] || 'file_2.txt', 'r')
 file_2 = { file: file_stream_2, key: File.basename(file_stream_2.path) }
@@ -81,14 +90,22 @@ upload_file_2 = {
 }
 s3.put_object(upload_file_2)
 file_stream_2.close
-puts "Uploaded file: #{file_2[:key]} to bucket: #{bucket_2[:bucket]}"
+msg = "[#{Time.now}] [INFO] Uploaded file: #{file_2[:key]} to bucket: #{bucket_2[:bucket]}"
+log_entries << msg
+puts msg
 
-puts "Displaying information about S3 Buckets & Objects"
+msg = "[#{Time.now}] [INFO] Displaying information about S3 Buckets & Objects"
+log_entries << msg
+puts msg
 # 3. List all buckets and objects in the buckets
 s3.list_buckets.buckets.each do |bucket|
-  puts "Bucket: #{bucket.name}, created_at: #{bucket.creation_date}"
+  msg = "[#{Time.now}] [INFO] Bucket: #{bucket.name}, created_at: #{bucket.creation_date}"
+  log_entries << msg
+  puts msg
   s3.list_objects(bucket: bucket.name, max_keys: 2).contents.each do |object|
-    puts "\tObject: #{object.key}, updated_at: #{object.last_modified}"
+    msg = "[#{Time.now}] [INFO] Object: #{object.key}, updated_at: #{object.last_modified}"
+    log_entries << msg
+    puts msg
   end
 end
 
@@ -98,32 +115,36 @@ download_file_stream_1 = s3.get_object(bucket: bucket_1[:bucket], key: file_1[:k
 File.open(download_file_1[:name], 'w') do |file|
   file.write download_file_stream_1.body.read
 end
-puts <<MSG
-Downloaded file: #{file_1[:key]}
-From bucket: #{bucket_1[:bucket]}
-As #{download_file_1[:name]}
-MSG
+msg = "[#{Time.now}] [INFO] Downloaded file: #{file_1[:key]}, from bucket: #{bucket_1[:bucket]}, as #{download_file_1[:name]}"
+log_entries << msg
+puts msg
 
 download_file_2 = { name: 'downloaded_file_2.txt' }
 download_file_stream_2 = s3.get_object(bucket: bucket_2[:bucket], key: file_2[:key])
 File.open(download_file_2[:name], 'w') do |file|
   file.write download_file_stream_2.body.read
 end
-puts <<MSG
-Downloaded file: #{file_2[:key]}
-From bucket: #{bucket_2[:bucket]}
-As #{download_file_2[:name]}
-MSG
+msg = "[#{Time.now}] [INFO] Downloaded file: #{file_2[:key]}, from bucket: #{bucket_2[:bucket]}, as #{download_file_2[:name]}"
+log_entries << msg
+puts msg
 
 # Clean up by deleting objects in buckets then buckets themselves
 s3.delete_object({ bucket: bucket_1[:bucket], key: file_1[:key] })
-puts "Deleted object: #{file_1[:key]} in bucket: #{bucket_1[:bucket]}"
+msg = "[#{Time.now}] [INFO] Deleted object: #{file_1[:key]} in bucket: #{bucket_1[:bucket]}"
+log_entries << msg
+puts msg
 s3.delete_object({ bucket: bucket_2[:bucket], key: file_2[:key] })
-puts "Deleted object: #{file_2[:key]} in bucket: #{bucket_2[:bucket]}"
+msg = "[#{Time.now}] [INFO] Deleted object: #{file_2[:key]} in bucket: #{bucket_2[:bucket]}"
+log_entries << msg
+puts msg
 s3.delete_bucket({ bucket: bucket_1[:bucket] })
-puts "Deleted bucket: #{bucket_1[:bucket]}"
+msg = "[#{Time.now}] [INFO] Deleted bucket: #{bucket_1[:bucket]}"
+log_entries << msg
+puts msg
 s3.delete_bucket({ bucket: bucket_2[:bucket] })
-puts "Deleted bucket: #{bucket_2[:bucket]}"
+msg = "[#{Time.now}] [INFO] Deleted bucket: #{bucket_2[:bucket]}"
+log_entries << msg
+puts msg
 
 # Assert files are identical
 
@@ -137,7 +158,9 @@ File.open(download_file_1[:name], 'r') do |file|
 end
 assertion_1 = assert_equal uploaded_file_1, downloaded_file_1
 if assertion_1.nil?
-  puts "Files: #{file_1[:key]} & #{download_file_1[:name]} are identical"
+  msg = "[#{Time.now}] [INFO] Files: #{file_1[:key]} & #{download_file_1[:name]} are identical"
+  log_entries << msg
+  puts msg
 end
 
 uploaded_file_2 = ''
@@ -150,13 +173,25 @@ File.open(download_file_2[:name], 'r') do |file|
 end
 assertion_2 =  assert_equal uploaded_file_2, downloaded_file_2
 if assertion_2.nil?
-  puts "Files: #{file_2[:key]} & #{download_file_2[:name]} are identical"
+  msg = "[#{Time.now}] [INFO] Files: #{file_2[:key]} & #{download_file_2[:name]} are identical"
+  log_entries << msg
+  puts msg
 end
 
 File.delete(download_file_1[:name])
-puts "Deleted downloaded file: #{download_file_1[:name]}"
+msg = "[#{Time.now}] [INFO] Deleted downloaded file: #{download_file_1[:name]}"
+log_entries << msg
+puts msg
 File.delete(download_file_2[:name])
-puts "Deleted downloaded file: #{download_file_2[:name]}"
+msg = "[#{Time.now}] [INFO] Deleted downloaded file: #{download_file_2[:name]}"
+log_entries << msg
+puts msg
+
+File.open(File.join(File.dirname(File.expand_path(__FILE__)), 's3-run.log'), 'w') do |file|
+  log_entries.each do |entry|
+    file.puts entry
+  end
+end
 
 exit 0
 
