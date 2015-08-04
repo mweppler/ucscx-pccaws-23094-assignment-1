@@ -10,13 +10,44 @@
 
 require 'aws-sdk'
 require 'json'
+require 'test/unit'
+include Test::Unit::Assertions
 
-secrets = JSON.load(File.read('secrets.json'))
+aws_config = {}
+
+users_aws_config_path = File.expand_path '~/.aws'
+if Dir.exists? users_aws_config_path
+  req_file_list = ["config", "credentials"]
+  file_list = Dir.glob(users_aws_config_path + '/*').map { |f| File.basename f }
+  req_file_list.keep_if { |conf_file| file_list }
+  if ["config", "credentials"] == file_list
+    aws_config = {}
+    file_list.each do |file_name|
+      File.open(File.join(users_aws_config_path, file_name), 'r') do |file|
+        file_contents = file.readlines
+        file_contents.delete_if { |line| line.match(/\[.*\]/) }
+        aws_config[file_name] = file_contents.map { |line| line.chomp.split('=') }.inject({}) { |hash, values| hash[values[0].strip] = values[1].strip ; hash }
+      end
+    end
+  end
+end
+
+if aws_config.empty?
+  local_aws_secrets_file = 'aws_config.json'
+  if local_aws_secrets_file
+    aws_config = JSON.load(File.read(local_aws_secrets_file))
+  end
+end
+
 Aws.config.update({
-  region: 'us-west-1',
-  credentials: Aws::Credentials.new(secrets['AccessKeyId'], secrets['SecretAccessKey']),
+  region: aws_config['config']['region'],
+  credentials: Aws::Credentials.new(
+    aws_config['credentials']['aws_access_key_id'],
+    aws_config['credentials']['aws_secret_access_key']
+  ),
 })
 s3 = Aws::S3::Client.new
+puts "Created S3 Instance"
 
 # Create 2 buckets in S3
 bucket_1 = { acl: 'private', bucket: 'me.weppler.myawsbucket.1' }
@@ -94,10 +125,7 @@ puts "Deleted bucket: #{bucket_1[:bucket]}"
 s3.delete_bucket({ bucket: bucket_2[:bucket] })
 puts "Deleted bucket: #{bucket_2[:bucket]}"
 
-# ---
-
-require 'test/unit'
-include Test::Unit::Assertions
+# Assert files are identical
 
 uploaded_file_1 = ''
 File.open(file_1[:key], 'r') do |file|
