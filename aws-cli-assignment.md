@@ -10,25 +10,25 @@
 
 * Create a security group that allows ssh access
 
-      $ aws ec2 create-security-group --group-name AWSClassSecurityGroup --description 'AWS Class Security Group'
-      $ aws ec2 authorize-security-group-ingress --group-name AWSClassSecurityGroup --protocol tcp --port 22 --cidr 0.0.0.0/0
+    $ aws ec2 create-security-group --group-name AWSClassSecurityGroup --description 'AWS Class Security Group'
+    $ aws ec2 authorize-security-group-ingress --group-name AWSClassSecurityGroup --protocol tcp --port 22 --cidr 0.0.0.0/0
 
 * Create a key/pair that is used for ssh access
 
-      $ aws ec2 create-key-pair --key-name AWSClassKeyPair
+    $ aws ec2 create-key-pair --key-name AWSClassKeyPair
 
 * Create two Amazon Linux Micro instancs in the us-west-1 region
 
-      $ aws ec2 run-instances --image-id ami-a540a5e1 --count 2 --instance-type t2.micro --key-name AWSClassKeyPair --security-groups AWSClassSecurityGroup
+    $ aws ec2 run-instances --image-id ami-a540a5e1 --count 2 --instance-type t2.micro --key-name AWSClassKeyPair --security-groups AWSClassSecurityGroup
 
 * After both instances are launched -- print out information about these two running instances
 
-      $ aws ec2 describe-instances --instance-ids i-43dfa481 i-46dfa484
+    $ aws ec2 describe-instances --instance-ids i-43dfa481 i-46dfa484
 
 * Next, terminate both instances
 
-      # $ aws ec2 stop-instances --instance-ids i-43dfa481 i-46dfa484
-      $ aws ec2 terminate-instances --instance-ids i-43dfa481 i-46dfa484
+    # $ aws ec2 stop-instances --instance-ids i-43dfa481 i-46dfa484
+    $ aws ec2 terminate-instances --instance-ids i-43dfa481 i-46dfa484
 
 ### Output of commands
 
